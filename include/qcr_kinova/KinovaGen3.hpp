@@ -42,6 +42,7 @@ class KinovaGen3 : public hardware_interface::RobotHW {
 
         std::mutex _lock;
 
+        k_api::Base::BaseClient* _api_base;
         k_api::BaseCyclic::BaseCyclicClient* _api_base_cyclic;
         k_api::BaseCyclic::Feedback _api_base_feedback;
         k_api::BaseCyclic::Command  _api_base_command;

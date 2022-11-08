@@ -143,8 +143,9 @@ link_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node kortex_examples/actuator_low_level_velocity_control.cpp kortex_examples/utilities.cpp)
+add_executable(${PROJECT_NAME}_node_example kortex_examples/actuator_low_level_velocity_control.cpp kortex_examples/utilities.cpp)
 add_executable(${PROJECT_NAME}_node src/main.cpp src/KinovaGen3.cpp)
+# add_executable(low_level_control_example kortex_examples/actuator_low_level_velocity_control.cpp kortex_examples/utilities.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -158,6 +159,11 @@ add_executable(${PROJECT_NAME}_node src/main.cpp src/KinovaGen3.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  KortexApiCpp pthread
+)
+
+target_link_libraries(${PROJECT_NAME}_node_example
   ${catkin_LIBRARIES}
   KortexApiCpp pthread
 )

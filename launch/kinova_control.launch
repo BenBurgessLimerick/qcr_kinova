@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     <rosparam command="load" file="$(find qcr_kinova)/config/control.yaml" />
-    <node name="qcr_kinova_node" pkg="qcr_kinova" type="qcr_kinova_node"/>
+    <node name="qcr_kinova_node" pkg="qcr_kinova" type="qcr_kinova_node" output="screen"/>
 
     <node name="kinova_controller_spawner" pkg="controller_manager" type="spawner" args="kinova_joint_publisher kinova_velocity_controller"/>
 
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_st_pub"/>
+    <!-- <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_st_pub"/> -->
 
 </launch>

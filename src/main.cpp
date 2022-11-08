@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
 
         robot.read();
         cm.update(ros::Time::now(), now - last_time);
+        // std::cout << 1 / ((float) (now - last_time).nsec / 1e9f) << std::endl;
         robot.write();
 
         last_time = now;
