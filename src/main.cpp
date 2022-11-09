@@ -30,5 +30,8 @@ int main(int argc, char* argv[]) {
         rate.sleep();
     }
 
+    std::cout << "Exiting" << std::endl;
+    robot.cleanup();
+
     return 0;
 }

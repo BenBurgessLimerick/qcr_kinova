@@ -18,6 +18,8 @@
 #include <TransportClientTcp.h>
 #include <TransportClientUdp.h>
 
+#include <ActuatorConfigClientRpc.h>
+
 namespace k_api = Kinova::Api;
 
 
@@ -34,6 +36,7 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         void register_interfaces();
         void read();
         void write();
+        void cleanup();
 
     private:
         hardware_interface::JointStateInterface _joint_state_interface;
@@ -46,5 +49,15 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         k_api::BaseCyclic::BaseCyclicClient* _api_base_cyclic;
         k_api::BaseCyclic::Feedback _api_base_feedback;
         k_api::BaseCyclic::Command  _api_base_command;
+
+        k_api::TransportClientTcp* transport;
+        k_api::RouterClient* router;
+        k_api::TransportClientUdp* transport_real_time;
+        k_api::RouterClient* router_real_time;
+        k_api::SessionManager* session_manager;
+        k_api::SessionManager* session_manager_real_time;
+
+        k_api::ActuatorConfig::ActuatorConfigClient* actuator_config;
+
 
 };

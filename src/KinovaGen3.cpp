@@ -4,8 +4,6 @@
 #include <thread>
 #include <sstream>
 
-#include <ActuatorConfigClientRpc.h>
-
 // TODO: Check these.
 #define IP_ADDRESS "192.168.1.10"
 #define PORT 10000
@@ -14,97 +12,107 @@
 #define USERNAME "admin"
 #define PASSWORD "admin"
 
+#define DIRECT_VELOCITY false
+
+
 KinovaGen3::KinovaGen3(ros::NodeHandle nh) { 
     kinova_api_init();
     register_interfaces();
     std::cout << "Kinova driver initialisation finished" << std::endl;
 }
 
+double deg2rad(double deg) {
+    return deg * 3.14159265358979 / 180.0;
+}
 
-// // Waiting time during actions
-// const auto ACTION_WAITING_TIME = std::chrono::seconds(1);
+double rad2deg(double rad) {
+    return rad * 180.0 / 3.14159265358979;
+}
 
-// // Create closure to set finished to true after an END or an ABORT
-// std::function<void(k_api::Base::ActionNotification)> 
-// check_for_end_or_abort(bool& finished)
-// {
-//     return [&finished](k_api::Base::ActionNotification notification)
-//     {
-//         std::cout << "EVENT : " << k_api::Base::ActionEvent_Name(notification.action_event()) << std::endl;
+// Waiting time during actions
+const auto ACTION_WAITING_TIME = std::chrono::seconds(1);
 
-//         // The action is finished when we receive a END or ABORT event
-//         switch(notification.action_event())
-//         {
-//         case k_api::Base::ActionEvent::ACTION_ABORT:
-//         case k_api::Base::ActionEvent::ACTION_END:
-//             finished = true;
-//             break;
-//         default:
-//             break;
-//         }
-//     };
-// }
+// Create closure to set finished to true after an END or an ABORT
+std::function<void(k_api::Base::ActionNotification)> 
+check_for_end_or_abort(bool& finished)
+{
+    return [&finished](k_api::Base::ActionNotification notification)
+    {
+        std::cout << "EVENT : " << k_api::Base::ActionEvent_Name(notification.action_event()) << std::endl;
+
+        // The action is finished when we receive a END or ABORT event
+        switch(notification.action_event())
+        {
+        case k_api::Base::ActionEvent::ACTION_ABORT:
+        case k_api::Base::ActionEvent::ACTION_END:
+            finished = true;
+            break;
+        default:
+            break;
+        }
+    };
+}
 
 
-// void example_move_to_home_position(k_api::Base::BaseClient* base)
-// {
-//     // Make sure the arm is in Single Level Servoing before executing an Action
-//     auto servoingMode = k_api::Base::ServoingModeInformation();
-//     servoingMode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
-//     base->SetServoingMode(servoingMode);
-//     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+void example_move_to_home_position(k_api::Base::BaseClient* base)
+{
+    // Make sure the arm is in Single Level Servoing before executing an Action
+    auto servoingMode = k_api::Base::ServoingModeInformation();
+    servoingMode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
+    base->SetServoingMode(servoingMode);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-//     // Move arm to ready position
-//     std::cout << "Moving the arm to a safe position" << std::endl;
-//     auto action_type = k_api::Base::RequestedActionType();
-//     action_type.set_action_type(k_api::Base::REACH_JOINT_ANGLES);
-//     auto action_list = base->ReadAllActions(action_type);
-//     auto action_handle = k_api::Base::ActionHandle();
-//     action_handle.set_identifier(0);
-//     for (auto action : action_list.action_list()) 
-//     {
-//         if (action.name() == "Home") 
-//         {
-//             action_handle = action.handle();
-//         }
-//     }
+    // Move arm to ready position
+    std::cout << "Moving the arm to a safe position" << std::endl;
+    auto action_type = k_api::Base::RequestedActionType();
+    action_type.set_action_type(k_api::Base::REACH_JOINT_ANGLES);
+    auto action_list = base->ReadAllActions(action_type);
+    auto action_handle = k_api::Base::ActionHandle();
+    action_handle.set_identifier(0);
+    for (auto action : action_list.action_list()) 
+    {
+        if (action.name() == "Home") 
+        {
+            action_handle = action.handle();
+        }
+    }
 
-//     if (action_handle.identifier() == 0) 
-//     {
-//         std::cout << "Can't reach safe position, exiting" << std::endl;
-//     } 
-//     else 
-//     {
-//         bool action_finished = false; 
-//         // Notify of any action topic event
-//         auto options = k_api::Common::NotificationOptions();
-//         auto notification_handle = base->OnNotificationActionTopic(
-//             check_for_end_or_abort(action_finished),
-//             options
-//         );
+    if (action_handle.identifier() == 0) 
+    {
+        std::cout << "Can't reach safe position, exiting" << std::endl;
+    } 
+    else 
+    {
+        bool action_finished = false; 
+        // Notify of any action topic event
+        auto options = k_api::Common::NotificationOptions();
+        auto notification_handle = base->OnNotificationActionTopic(
+            check_for_end_or_abort(action_finished),
+            options
+        );
 
-//         base->ExecuteActionFromReference(action_handle);
+        base->ExecuteActionFromReference(action_handle);
 
-//         while(!action_finished)
-//         { 
-//             std::this_thread::sleep_for(ACTION_WAITING_TIME);
-//         }
+        while(!action_finished)
+        { 
+            std::this_thread::sleep_for(ACTION_WAITING_TIME);
+        }
 
-//         base->Unsubscribe(notification_handle);
-//     }
-// }
+        base->Unsubscribe(notification_handle);
+    }
+}
 
 void KinovaGen3::kinova_api_init() {
 
     // Create API objects
     auto error_callback = [](k_api::KError err){ cout << "_________ callback error _________" << err.toString(); };
     
-    auto transport = new k_api::TransportClientTcp();
-    auto router = new k_api::RouterClient(transport, error_callback);
+    transport = new k_api::TransportClientTcp();
+    router = new k_api::RouterClient(transport, error_callback);
     transport->connect(IP_ADDRESS, PORT);
 
-    auto transport_real_time = new k_api::TransportClientUdp();
-    auto router_real_time = new k_api::RouterClient(transport_real_time, error_callback);
+    transport_real_time = new k_api::TransportClientUdp();
+    router_real_time = new k_api::RouterClient(transport_real_time, error_callback);
     transport_real_time->connect(IP_ADDRESS, PORT_REAL_TIME);
 
     // Set session data connection information
@@ -116,9 +124,9 @@ void KinovaGen3::kinova_api_init() {
 
     // Session manager service wrapper
     std::cout << "Creating sessions for communication" << std::endl;
-    auto session_manager = new k_api::SessionManager(router);
+    session_manager = new k_api::SessionManager(router);
     session_manager->CreateSession(create_session_info);
-    auto session_manager_real_time = new k_api::SessionManager(router_real_time);
+    session_manager_real_time = new k_api::SessionManager(router_real_time);
     session_manager_real_time->CreateSession(create_session_info);
     std::cout << "Sessions created" << std::endl;
 
@@ -137,22 +145,22 @@ void KinovaGen3::kinova_api_init() {
     
     std::cout << "Actuator count: " << actuator_count << std::endl;
 
-   
-
     for (int i = 0; i < actuator_count; i++) {
-
         _api_base_command.add_actuators()->set_position(_api_base_feedback.actuators(i).position());
     }
 
-     auto actuator_config = new k_api::ActuatorConfig::ActuatorConfigClient(router);
-    auto control_mode_message = k_api::ActuatorConfig::ControlModeInformation();
-    control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::VELOCITY);
+    _api_base_feedback = _api_base_cyclic->Refresh(_api_base_command);
 
+    if (DIRECT_VELOCITY) {
+        actuator_config = new k_api::ActuatorConfig::ActuatorConfigClient(router);
+        auto control_mode_message = k_api::ActuatorConfig::ControlModeInformation();
+        control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::VELOCITY);
 
-
-     for (int i = 1; i <= actuator_count; i++) {
-        actuator_config->SetControlMode(control_mode_message,i);
-     }
+        for (int i = 1; i <= actuator_count; i++) {
+            actuator_config->SetControlMode(control_mode_message, i);
+        }
+    }
+    
 
     
 }   
@@ -183,6 +191,11 @@ void KinovaGen3::register_interfaces() {
         _velocity_joint_interface.registerHandle(vel_handle);
     }
 
+    double pos;
+    for (int i = 0; i < N_JOINTS; i++) {
+        pos = fmod(_api_base_feedback.actuators(i).position() + 180.0, 360.0) - 180.0;
+        _joints[i].position_command = deg2rad(pos);
+    }
     
     registerInterface(&_joint_state_interface);
     registerInterface(&_velocity_joint_interface);
@@ -192,10 +205,12 @@ void KinovaGen3::register_interfaces() {
 void KinovaGen3::read() {
     std::scoped_lock(_lock);  // This lock unused
     // _api_base_feedback = _api_base_cyclic->RefreshFeedback();
-    
+
+    double pos;
     for (int i = 0; i < N_JOINTS; i++) {
-        _joints[i].position = _api_base_feedback.actuators(i).position();
-        _joints[i].velocity = _api_base_feedback.actuators(i).velocity();
+        pos = fmod(_api_base_feedback.actuators(i).position() + 180.0, 360.0) - 180.0;
+        _joints[i].position = deg2rad(pos);
+        _joints[i].velocity = deg2rad(_api_base_feedback.actuators(i).velocity());
         _joints[i].effort = _api_base_feedback.actuators(i).torque();
     }
 }
@@ -213,15 +228,60 @@ void KinovaGen3::write() {
     
     for (int i = 0; i < N_JOINTS; i++) {
         // std::cout << "Joint " << i << ":" << _joints[i].velocity_command << std::endl;
-        _api_base_command.mutable_actuators(i)->set_velocity(
-            _joints[i].velocity_command
-        );	   
+        if (DIRECT_VELOCITY) {
+            _api_base_command.mutable_actuators(i)->set_velocity(
+                rad2deg(_joints[i].velocity_command)
+            );
+            // Must send position to prevent following error. 
+            _api_base_command.mutable_actuators(i)->set_position(
+                fmod(rad2deg(_joints[i].position), 360.0f)
+            );
+        } else {
+            _joints[i].position_command += _joints[i].velocity_command * 0.001f;
+                _api_base_command.mutable_actuators(i)->set_position(
+                fmod(rad2deg(_joints[i].position_command), 360.0f)
+            );
+        }
+        	   
 
-        _api_base_command.mutable_actuators(i)->set_position(
-            _joints[i].position
-        );
+        
 
     }
     _api_base_feedback = _api_base_cyclic->Refresh(_api_base_command);
     // _api_base_cyclic->Refresh_callback(_api_base_command, fct_callback, 0);
+}
+
+void KinovaGen3::cleanup() {
+    std::cout << "Running Kinova cleanup" << std::endl;
+    if (DIRECT_VELOCITY) {
+        std::cout << "Returning actuators to position control" << std::endl;
+        // actuator_config = new k_api::ActuatorConfig::ActuatorConfigClient(router);
+        auto control_mode_message = k_api::ActuatorConfig::ControlModeInformation();
+        control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+
+        for (int i = 1; i <= N_JOINTS; i++) {
+            actuator_config->SetControlMode(control_mode_message, i);
+        }
+        std::cout << "Actuators in position mode" << std::endl;
+    }
+    // std::cout << "Waiting" << std::endl;
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    
+    std::cout << "Returning arm to single level servoing" << std::endl;
+    auto servoingMode = k_api::Base::ServoingModeInformation();
+    servoingMode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
+    _api_base->SetServoingMode(servoingMode);
+
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+     // Close API session
+    session_manager->CloseSession();
+    session_manager_real_time->CloseSession();
+
+    // Deactivate the router and cleanly disconnect from the transport object
+    router->SetActivationStatus(false);
+    transport->disconnect();
+    router_real_time->SetActivationStatus(false);
+    transport_real_time->disconnect();
+
 }
