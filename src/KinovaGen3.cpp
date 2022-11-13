@@ -160,9 +160,7 @@ void KinovaGen3::kinova_api_init() {
             actuator_config->SetControlMode(control_mode_message, i);
         }
     }
-    
-
-    
+        
 }   
 
 void KinovaGen3::register_interfaces() {
@@ -225,28 +223,41 @@ void fct_callback(const Kinova::Api::Error &err, const k_api::BaseCyclic::Feedba
 
 void KinovaGen3::write() {
     // std::cout << "Writing velocity command: " << std::endl;
-    
+    _api_base_command.set_frame_id(_api_base_command.frame_id() + 1);
+    if (_api_base_command.frame_id() > 65535)
+        _api_base_command.set_frame_id(0);
+
+    // std::cout << std::endl;
     for (int i = 0; i < N_JOINTS; i++) {
         // std::cout << "Joint " << i << ":" << _joints[i].velocity_command << std::endl;
+        _api_base_command.mutable_actuators(i)->set_command_id(_api_base_command.frame_id());
         if (DIRECT_VELOCITY) {
             _api_base_command.mutable_actuators(i)->set_velocity(
                 rad2deg(_joints[i].velocity_command)
             );
+
+            double pos_deg = fmod(rad2deg(_joints[i].position), 360.0f);
+            if (pos_deg < 0) {
+                pos_deg += 360;
+            }
             // Must send position to prevent following error. 
-            _api_base_command.mutable_actuators(i)->set_position(
-                fmod(rad2deg(_joints[i].position), 360.0f)
-            );
+            _api_base_command.mutable_actuators(i)->set_position(pos_deg);
         } else {
+            
             _joints[i].position_command += _joints[i].velocity_command * 0.001f;
-                _api_base_command.mutable_actuators(i)->set_position(
-                fmod(rad2deg(_joints[i].position_command), 360.0f)
-            );
+
+            double pos_command_deg = fmod(rad2deg(_joints[i].position_command), 360.0f);
+            if (pos_command_deg < 0) {
+                pos_command_deg += 360;
+            }
+            // std::cout << i <<  " : " << _joints[i].position_command  << " , " << fmod(rad2deg(_joints[i].position_command), 360.0f) << " , " << pos_command_deg << " , " << _api_base_feedback.actuators(i).position() << std::endl;
+            _api_base_command.mutable_actuators(i)->set_position(pos_command_deg);
         }
         	   
-
-        
-
     }
+
+    
+
     _api_base_feedback = _api_base_cyclic->Refresh(_api_base_command);
     // _api_base_cyclic->Refresh_callback(_api_base_command, fct_callback, 0);
 }
