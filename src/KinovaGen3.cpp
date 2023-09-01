@@ -181,23 +181,6 @@ void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg
 
 void KinovaGen3::set_gripper_position(float pos) {
     target_gripper_position = pos;
-    std::cout << "New gripper target: " << pos << ". Current: " << gripper_position << std::endl;
-    // gripper_command->set_position(pos);
-
-	/*
-    k_api::Base::GripperCommand gripper_command;
-    gripper_command.set_mode(k_api::Base::GRIPPER_POSITION);
-    auto finger = gripper_command.mutable_gripper()->add_finger();
-    finger->set_finger_identifier(1);
-
-    if (pos > 1) {
-        pos = 1;
-    } else if (pos < 0) {
-        pos = 0;
-    }
-    finger->set_value(pos);
-    _api_base->SendGripperCommand(gripper_command);
-    */
 }
 
 void KinovaGen3::register_interfaces() {
