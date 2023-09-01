@@ -141,6 +141,18 @@ void KinovaGen3::kinova_api_init() {
     _api_base->SetServoingMode(servoingMode);
     _api_base_feedback = _api_base_cyclic->RefreshFeedback();
 
+    // Gripper Stuff
+    gripper_position = _api_base_feedback.interconnect().gripper_feedback().motor()[0].position();
+    target_gripper_postion = gripper_position;
+
+    _api_base_command.mutable_interconnect()->mutable_command_id()->set_identifier(0);
+    gripper_command = _api_base_command.mutable_interconnect()->mutable_gripper_command()->add_motor_cmd();
+    gripper_command->set_position(gripper_position);
+    gripper_command->set_velocity(0.0);
+    gripper_command->set_force(100.0);
+
+
+    // Actuator init
     int actuator_count = _api_base->GetActuatorCount().count();
     
     std::cout << "Actuator count: " << actuator_count << std::endl;
@@ -168,13 +180,8 @@ void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg
 }
 
 void KinovaGen3::set_gripper_position(float pos) {
-    
-    _api_base_command.set_frame_id(_api_base_command.frame_id() + 1);
-    if (_api_base_command.frame_id() > 65535)
-        _api_base_command.set_frame_id(0);
-
-    k_api::GipperCyclic::MotorCommand gripper_command;
-    gripper_command = _api_base_command.mutable_interconnect()->mutable_gripper_command()->add_motor_cmd();
+    gripper_target_position = pos;
+    gripper_command->set_position(pos);
 
 	/*
     k_api::Base::GripperCommand gripper_command;
@@ -240,6 +247,8 @@ void KinovaGen3::read() {
         _joints[i].velocity = deg2rad(_api_base_feedback.actuators(i).velocity());
         _joints[i].effort = _api_base_feedback.actuators(i).torque();
     }
+
+    gripper_position = _api_base_feedback.interconnect().gripper_feedback().motor()[0].position();
 }
 
 void fct_callback(const Kinova::Api::Error &err, const k_api::BaseCyclic::Feedback data) {

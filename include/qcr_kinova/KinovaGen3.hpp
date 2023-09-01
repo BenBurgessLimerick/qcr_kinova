@@ -42,6 +42,9 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         void set_gripper_position(float pos);
         void set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg);
 
+        float gripper_position;
+        float target_gripper_position;
+
     private:
         hardware_interface::JointStateInterface _joint_state_interface;
         hardware_interface::VelocityJointInterface _velocity_joint_interface;
@@ -53,6 +56,8 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         k_api::BaseCyclic::BaseCyclicClient* _api_base_cyclic;
         k_api::BaseCyclic::Feedback _api_base_feedback;
         k_api::BaseCyclic::Command  _api_base_command;
+
+        k_api::GipperCyclic::MotorCommand* gripper_command;
 
         k_api::TransportClientTcp* transport;
         k_api::RouterClient* router;
