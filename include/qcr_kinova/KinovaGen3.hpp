@@ -57,7 +57,7 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         k_api::BaseCyclic::Feedback _api_base_feedback;
         k_api::BaseCyclic::Command  _api_base_command;
 
-        k_api::GipperCyclic::MotorCommand* gripper_command;
+        k_api::GripperCyclic::MotorCommand* gripper_command;
 
         k_api::TransportClientTcp* transport;
         k_api::RouterClient* router;

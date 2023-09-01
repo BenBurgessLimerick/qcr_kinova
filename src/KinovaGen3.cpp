@@ -143,7 +143,7 @@ void KinovaGen3::kinova_api_init() {
 
     // Gripper Stuff
     gripper_position = _api_base_feedback.interconnect().gripper_feedback().motor()[0].position();
-    target_gripper_postion = gripper_position;
+    target_gripper_position = gripper_position;
 
     _api_base_command.mutable_interconnect()->mutable_command_id()->set_identifier(0);
     gripper_command = _api_base_command.mutable_interconnect()->mutable_gripper_command()->add_motor_cmd();
@@ -180,7 +180,8 @@ void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg
 }
 
 void KinovaGen3::set_gripper_position(float pos) {
-    gripper_target_position = pos;
+    target_gripper_position = pos;
+    std::cout << "New gripper target: " << pos << ". Current: " << gripper_position << std::endl;
     gripper_command->set_position(pos);
 
 	/*
