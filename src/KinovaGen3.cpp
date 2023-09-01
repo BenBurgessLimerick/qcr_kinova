@@ -163,6 +163,25 @@ void KinovaGen3::kinova_api_init() {
         
 }   
 
+void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg) {
+    set_gripper_position(msg->data);
+}
+
+void KinovaGen3::set_gripper_position(float pos) {
+    _api::Base::GripperCommand gripper_command;
+    gripper_command.set_mode(k_api::Base::GRIPPER_POSITION);
+    auto finger = gripper_command.mutable_gripper()->add_finger();
+    finger->set_finger_identifier(1);
+
+    if (pos > 1) {
+        pos = 1;
+    } else if (pos < 0) {
+        pos = 0;
+    }
+    finger->set_value(pos);
+    _api_base->SendGripperCommand(gripper_command);
+}
+
 void KinovaGen3::register_interfaces() {
     std::cout << "Starting registering interfaces" << std::endl;
     // connect and register the joint state interface

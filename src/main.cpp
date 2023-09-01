@@ -15,6 +15,8 @@ int main(int argc, char* argv[]) {
 
     ros::Rate rate(frequency);
 
+    ros::Subscriber sub = n.subscribe("gripper_pos_command", 1, robot.set_gripper_pos_ros);
+
     ros::AsyncSpinner spinner(4);
     spinner.start();
 

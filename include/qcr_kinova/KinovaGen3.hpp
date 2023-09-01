@@ -20,6 +20,8 @@
 
 #include <ActuatorConfigClientRpc.h>
 
+#include "std_msgs/Float32.h"
+
 namespace k_api = Kinova::Api;
 
 
@@ -37,6 +39,8 @@ class KinovaGen3 : public hardware_interface::RobotHW {
         void read();
         void write();
         void cleanup();
+        void set_gripper_position(float pos);
+        set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg);
 
     private:
         hardware_interface::JointStateInterface _joint_state_interface;
