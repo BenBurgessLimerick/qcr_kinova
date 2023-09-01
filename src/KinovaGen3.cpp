@@ -182,7 +182,7 @@ void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg
 void KinovaGen3::set_gripper_position(float pos) {
     target_gripper_position = pos;
     std::cout << "New gripper target: " << pos << ". Current: " << gripper_position << std::endl;
-    gripper_command->set_position(pos);
+    // gripper_command->set_position(pos);
 
 	/*
     k_api::Base::GripperCommand gripper_command;
@@ -291,8 +291,21 @@ void KinovaGen3::write() {
             }
             // std::cout << i <<  " : " << _joints[i].position_command  << " , " << fmod(rad2deg(_joints[i].position_command), 360.0f) << " , " << pos_command_deg << " , " << _api_base_feedback.actuators(i).position() << std::endl;
             _api_base_command.mutable_actuators(i)->set_position(pos_command_deg);
+        }	   
+    }
+
+    // Gripper control
+    float position_error = target_gripper_position - gripper_position;
+
+    if (fabs(position_error) < 1.5) {
+        gripper_command->set_velocity(0.0);
+    } else {
+        float velocity = 2.0 * fabs(position_error);
+        if (velocity > 100.0) {
+            velocity = 100.0;
         }
-        	   
+        gripper_command->set_position(target_gripper_position);
+        gripper_command->set_velocity(velocity);
     }
 
     
