@@ -168,7 +168,16 @@ void KinovaGen3::set_gripper_position_ros(const std_msgs::Float32::ConstPtr& msg
 }
 
 void KinovaGen3::set_gripper_position(float pos) {
-    _api::Base::GripperCommand gripper_command;
+    
+    _api_base_command.set_frame_id(_api_base_command.frame_id() + 1);
+    if (_api_base_command.frame_id() > 65535)
+        _api_base_command.set_frame_id(0);
+
+    k_api::GipperCyclic::MotorCommand gripper_command;
+    gripper_command = _api_base_command.mutable_interconnect()->mutable_gripper_command()->add_motor_cmd();
+
+	/*
+    k_api::Base::GripperCommand gripper_command;
     gripper_command.set_mode(k_api::Base::GRIPPER_POSITION);
     auto finger = gripper_command.mutable_gripper()->add_finger();
     finger->set_finger_identifier(1);
@@ -180,6 +189,7 @@ void KinovaGen3::set_gripper_position(float pos) {
     }
     finger->set_value(pos);
     _api_base->SendGripperCommand(gripper_command);
+    */
 }
 
 void KinovaGen3::register_interfaces() {
